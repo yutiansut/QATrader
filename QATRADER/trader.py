@@ -4,7 +4,6 @@ import threading
 import time
 import pymongo
 
-import _thread
 import QUANTAXIS as QA
 from QA_OTGBroker import (cancel_order, change_password, login, on_close,
                           on_error, on_message, peek, querybank, send_order,
@@ -38,8 +37,8 @@ class trade_account(QA_Thread):
         [type] -- [description]
     """
 
-    def __init__(self, account_cookie, password, wsuri='ws://www.yutiansut.com:7988', broker_name='simnow', portfolio='default',
-                 trade_host=trade_server_ip, trade_port=trade_server_port, pub_host='localhost', pub_port='5672', sig=True, ping_gap=1,
+    def __init__(self, account_cookie, password, wsuri, broker_name='simnow', portfolio='default',
+                 trade_host='localhost', trade_port='5672', pub_host='localhost', pub_port='5672', sig=True, ping_gap=1,
                  bank_password=None, capital_password=None,
                  if_restart=True, taskid=None, database=pymongo.MongoClient()):
 
@@ -129,12 +128,6 @@ class trade_account(QA_Thread):
             self.settle()
             print(Exception)
             raise Exception
-            # if self.if_restart:
-            #     time.sleep(self.ping_gap)
-            # else:
-
-            #     raise Exception
-
     # 这里是线程在干的事情
 
     def run(self):
@@ -168,8 +161,6 @@ class trade_account(QA_Thread):
                     if now.hour == 20:
                         self.settle()
 
-                    # self.ws.close()
-                    #self.if_restart = True
                     time.sleep(3)  # 阻塞住
 
             self.ping()
@@ -233,7 +224,6 @@ class trade_account(QA_Thread):
                 # if 'session' in data
 
                 account_cookie = str(list(data.keys())[0])
-                #user_id = data[account_cookie]['user_id']
                 self.last_update_time = datetime.datetime.now()
                 self.message['updatetime'] = str(
                     self.last_update_time)
@@ -258,13 +248,6 @@ class trade_account(QA_Thread):
                     self.message['bankname'] = res['name']
                     self.message['money'] = res['fetch_amount']
 
-                # self.message['positions'] = self.update(
-                #     self.message['positions'], data[account_cookie]['positions'])
-                # self.message['orders'] = self.update(
-                #     self.message['orders'], data[account_cookie]['orders'])
-                # self.message['bank'] = self.update(
-                #     self.message['bank'], data[account_cookie]['bank'])
-
                 try:
                     for tradeid in data[account_cookie]['trades'].keys():
                         if tradeid not in self.message['trades'].keys():
@@ -280,18 +263,6 @@ class trade_account(QA_Thread):
 
                 self.xhistory.insert_one(
                     {'account_cookie': account_cookie, 'accounts': self.message['accounts'], 'updatetime': self.last_update_time})
-                # try:
-                #     temp = {
-                #         "measurement": "QAAccount",
-                #         'time': self.last_update_time,
-                #         "tags": {
-                #             "user_id": self.message['accounts']['user_id']
-                #         },
-                #         'fields': self.message['accounts']
-                #     }
-                #     client.write_points([temp])
-                # except:
-                #     pass
 
             except Exception as e:
                 print(e)
@@ -346,7 +317,6 @@ class trade_account(QA_Thread):
         4. 
         """
         print(self.message)
-        #self.message['trading_day'] = str(self.message['updatetime'])[0:10]
         self.settle_client.update_one({'account_cookie': self.account_cookie, 'trading_day': self.message.get('trading_day', str(self.last_update_time)[0:10])}, {
             '$set': fix_dict(self.message)}, upsert=True)
         """
@@ -421,8 +391,6 @@ class trade_account(QA_Thread):
                 )
             elif z['topic'] == 'query_bank':
 
-                # x = list(self.message['banks'].())[0]
-                # x['fetch_amount'] = -1
                 self.message['banks'][self.message['bankid']
                                       ]['fetch_amount'] = -1
                 self.ws.send(
@@ -446,4 +414,3 @@ class trade_account(QA_Thread):
 
         threading.Thread(target=targs, name='callback_handler',
                          daemon=True).start()
-
