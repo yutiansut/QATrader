@@ -9,7 +9,7 @@ from QA_OTGBroker import (cancel_order, change_password, login, on_close,
                           on_error, on_message, peek, querybank, send_order,
                           subscribe_quote, transfer, websocket, query_settlement)
 from QAPUBSUB import consumer, producer
-from QAREALTIME.setting import (
+from QATRADER.setting import (
     trade_server_account_exchange, trade_server_ip,
     trade_server_order_exchange, trade_server_password, trade_server_port,
     trade_server_user)
