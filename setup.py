@@ -1,0 +1,57 @@
+import codecs
+import io
+import os
+import re
+import sys
+import webbrowser
+import platform
+
+try:
+    from setuptools import setup
+except:
+    from distutils.core import setup
+
+
+NAME = "QATRADER"
+"""
+名字，一般放你包的名字即可
+"""
+PACKAGES = ["QATRADER"]
+"""
+包含的包，可以多个，这是一个列表
+"""
+
+DESCRIPTION = "QUANTAXIS TRADER"
+KEYWORDS = ["quantaxis", "quant", "finance", "Backtest", 'Framework']
+AUTHOR_EMAIL = "yutiansut@qq.com"
+AUTHOR = 'yutiansut'
+URL = "https://github.com/yutiansut/QATRADER"
+
+
+LICENSE = "MIT"
+
+setup(
+    name=NAME,
+    version='1.0',
+    description=DESCRIPTION,
+    long_description='trader',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
+    ],
+    install_requires=['pika', 'quantaxis>=1.5.3', 'quantaxis_pubsub', 'quantaxis_otgbroker'],
+    entry_points={
+        'console_scripts': [
+        ]
+    },
+    keywords=KEYWORDS,
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
+    url=URL,
+    license=LICENSE,
+    packages=PACKAGES,
+    include_package_data=True,
+    zip_safe=True
+)
