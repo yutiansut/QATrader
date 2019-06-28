@@ -34,7 +34,7 @@ print(acc['banks'])
 
 当然 除了从数据库获取, 你也可以从业务平台上订阅该账户的增量信息
 
-```
+```python
 from QAPUBSUB import consumer
 import json
 from QAREALTIME.setting import real_account_mongo_ip
