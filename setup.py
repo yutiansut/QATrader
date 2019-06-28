@@ -41,7 +41,7 @@ setup(
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
     ],
-    install_requires=['pika', 'quantaxis>=1.5.3', 'quantaxis_pubsub', 'quantaxis_otgbroker'],
+    install_requires=['pika', 'quantaxis>=1.5.3', 'quantaxis_pubsub', 'quantaxis_otgbroker>=1.6'],
     entry_points={
         'console_scripts': [
         ]
