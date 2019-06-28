@@ -32,6 +32,52 @@ print(acc['banks'])
 
 ```
 
+当然 除了从数据库获取, 你也可以从业务平台上订阅该账户的增量信息
+
+```
+from QAPUBSUB import consumer
+import json
+from QAREALTIME.setting import real_account_mongo_ip
+z = consumer.subscriber_routing(host='127.0.0.1', user='admin', password='admin',exchange='QAACCOUNT',routing_key='812572')
+import pandas as pd
+import QUANTAXIS as QA
+
+
+def parse(a, b, c, body):
+    z = json.loads(str(body, encoding='utf-8'))
+    # QA.QA_util_log_info(z)
+    if z['aid'] == 'rtn_data':
+        data = z['data'][0]['trade']
+        account_cookie = str(list(data.keys())[0])
+        QA.QA_util_log_info(data)
+        user_id = data[account_cookie]['user_id']
+        accounts = data[account_cookie]['accounts']['CNY']
+        positions = data[account_cookie]['positions']
+        orders = data[account_cookie]['orders']
+        trades = data[account_cookie]['trades']
+        banks = data[account_cookie]['banks']
+        transfers = data[account_cookie]['transfers']
+
+        QA.QA_util_log_info("======================= QUANTAXIS ::{}=======================".format(
+            account_cookie))
+        QA.QA_util_log_info("== pre_balance " + str(accounts['pre_balance']) +
+                            "== balance " + str(accounts['balance']))
+        QA.QA_util_log_info("== 可用资金 " + str(accounts['available']) +
+                            "== 冻结保证金 " + str(accounts['margin']) +
+                            "== risk_ratio " + str(accounts['risk_ratio']))
+        QA.QA_util_log_info('== position_profit ' +
+                            str(accounts['position_profit']))
+        QA.QA_util_log_info("==============POSITIONS===============")
+        QA.QA_util_log_info(pd.DataFrame(positions))
+        QA.QA_util_log_info("==============ORDERS==================")
+        QA.QA_util_log_info(pd.DataFrame(orders))
+        QA.QA_util_log_info("==============TRADERS==================")
+        QA.QA_util_log_info(pd.DataFrame(trades))
+z.callback = parse
+z.start()
+```
+
+
 > 下单:
 
 ```python
