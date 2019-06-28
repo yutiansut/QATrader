@@ -88,8 +88,9 @@ class trade_account(QA_Thread):
 
         message = message if isinstance(
             message, dict) else json.loads(str(message))
+        #print(message)
         message = fix_dict(message)
-        print(message)
+        #print(message)
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
@@ -99,11 +100,12 @@ class trade_account(QA_Thread):
 
         """
 
-        if message['aid'] == "rtn_data":
+        if message['aid'] in ["rtn_data", 'qry_settlement_info']:
 
             self.sync()
 
             self.handle(message)
+
 
     def on_pong(self, message):
         mes = str(message, encoding='utf-8').split('-')
@@ -216,7 +218,8 @@ class trade_account(QA_Thread):
             print(e)
 
     def handle(self, message):
-        print(message)
+        #print(message)
+        #print(message['aid'])
         if message['aid'] == "rtn_data":
 
             try:
@@ -224,6 +227,7 @@ class trade_account(QA_Thread):
                 # if 'session' in data
 
                 account_cookie = str(list(data.keys())[0])
+                #user_id = data[account_cookie]['user_id']
                 self.last_update_time = datetime.datetime.now()
                 self.message['updatetime'] = str(
                     self.last_update_time)
@@ -248,6 +252,13 @@ class trade_account(QA_Thread):
                     self.message['bankname'] = res['name']
                     self.message['money'] = res['fetch_amount']
 
+                # self.message['positions'] = self.update(
+                #     self.message['positions'], data[account_cookie]['positions'])
+                # self.message['orders'] = self.update(
+                #     self.message['orders'], data[account_cookie]['orders'])
+                # self.message['bank'] = self.update(
+                #     self.message['bank'], data[account_cookie]['bank'])
+
                 try:
                     for tradeid in data[account_cookie]['trades'].keys():
                         if tradeid not in self.message['trades'].keys():
@@ -263,6 +274,18 @@ class trade_account(QA_Thread):
 
                 self.xhistory.insert_one(
                     {'account_cookie': account_cookie, 'accounts': self.message['accounts'], 'updatetime': self.last_update_time})
+                # try:
+                #     temp = {
+                #         "measurement": "QAAccount",
+                #         'time': self.last_update_time,
+                #         "tags": {
+                #             "user_id": self.message['accounts']['user_id']
+                #         },
+                #         'fields': self.message['accounts']
+                #     }
+                #     client.write_points([temp])
+                # except:
+                #     pass
 
             except Exception as e:
                 print(e)
@@ -293,15 +316,14 @@ class trade_account(QA_Thread):
                         # self.ws.close()
                     elif '登陆成功' in mess:
                         pass
-                    try:
-                        if typed == 'SETTLEMENT':
-                            reportdate = mess.split('Creation Date：')[1][0:8]
-                            self.message['settlement'][reportdate] = mess
-                    except:
-                        pass
 
                     self.update_account()
-                QA.QA_util_log_info(data)
+                # QA.QA_util_log_info(data)
+        elif message['aid'] == "qry_settlement_info":
+            reportdate = message['trading_day']
+            self.message['settlement'][str(reportdate)] = message['settlement_info']
+            #print(self.message)
+            self.update_account()
 
     def settle(self):
         """配对otg的一个结算过程
@@ -380,22 +402,24 @@ class trade_account(QA_Thread):
                     cancel_order(z['account_cookie'], z['order_id']))
             elif z['topic'] == 'transfer':
                 self.ws.send(
-                    transfer(z['account_cookie'], self.message['capital_password'],
-                             self.message['bankid'], self.message['bank_password'], z['amount'])
+                    transfer(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
+                             z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']), z['amount'])
                 )
                 self.message['banks'][self.message['bankid']
                                       ]['fetch_amount'] = -1
                 self.ws.send(
-                    querybank(z['account_cookie'], self.message['capital_password'],
-                              self.message['bankid'], self.message['bank_password'])
+                    querybank(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
+                              z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']))
                 )
             elif z['topic'] == 'query_bank':
 
+                # x = list(self.message['banks'].())[0]
+                # x['fetch_amount'] = -1
                 self.message['banks'][self.message['bankid']
                                       ]['fetch_amount'] = -1
                 self.ws.send(
-                    querybank(z['account_cookie'], self.message['capital_password'],
-                              self.message['bankid'], self.message['bank_password'])
+                    querybank(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
+                              z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']))
                 )
             elif z['topic'] == 'kill':
                 self.message['status'] = 500
@@ -404,7 +428,7 @@ class trade_account(QA_Thread):
                 self.ws.close()
                 raise Exception
             elif z['topic'] == 'query_settlement':
-                self.ws.send(query_settlement(z.get('day')))
+                self.ws.send(query_settlement(int(z.get('day'))))
             elif z['topic'] == 'change_password':
 
                 self.ws.send(
