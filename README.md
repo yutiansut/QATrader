@@ -7,9 +7,30 @@ QATRADER websocket 接入的期货交易
 
 这种设置主要是为了单账户多策略/ 以及单策略多市场等考虑
 
-> 获取账户数据
+> 获取账户数据:
 
-pymongo.MongoClient().QAREALTIME.account.find_one({'account_cookie':'xxxx'})
+```python
+acc = pymongo.MongoClient().QAREALTIME.account.find_one({'account_cookie':'xxxx'})
+
+# 基础信息
+print(acc['accounts'])
+
+# 持仓
+print(acc['positions'])
+
+# 订单
+print(acc['orders'])
+
+# 交易
+print(acc['trades'])
+
+# 银期转账
+print(acc['transfer'])
+
+# 查询银行(多银行)
+print(acc['banks'])
+
+```
 
 > 下单:
 
