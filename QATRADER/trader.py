@@ -24,7 +24,7 @@ from QUANTAXIS.QAEngine import QA_Thread
 """
 
 
-class trade_account(QA_Thread):
+class QA_TRADER(QA_Thread):
     """trade_account 是一个线程/ 具备websocket能力/ 实例化为一个可以交易的websocket型账户
 
     Arguments:
@@ -88,9 +88,9 @@ class trade_account(QA_Thread):
 
         message = message if isinstance(
             message, dict) else json.loads(str(message))
-        #print(message)
+        # print(message)
         message = fix_dict(message)
-        #print(message)
+        # print(message)
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
@@ -105,7 +105,6 @@ class trade_account(QA_Thread):
             self.sync()
 
             self.handle(message)
-
 
     def on_pong(self, message):
         mes = str(message, encoding='utf-8').split('-')
@@ -218,8 +217,8 @@ class trade_account(QA_Thread):
             print(e)
 
     def handle(self, message):
-        #print(message)
-        #print(message['aid'])
+        # print(message)
+        # print(message['aid'])
         if message['aid'] == "rtn_data":
 
             try:
@@ -321,8 +320,9 @@ class trade_account(QA_Thread):
                 # QA.QA_util_log_info(data)
         elif message['aid'] == "qry_settlement_info":
             reportdate = message['trading_day']
-            self.message['settlement'][str(reportdate)] = message['settlement_info']
-            #print(self.message)
+            self.message['settlement'][str(
+                reportdate)] = message['settlement_info']
+            # print(self.message)
             self.update_account()
 
     def settle(self):
