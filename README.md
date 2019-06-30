@@ -1,5 +1,5 @@
 # QATrader
-QATRADER websocket 接入的期货交易
+QATRADER websocket 接入的期货交易/ 并给予HTTP接口方便快速调用业务(可自行封装)
 
 需要先行配置好Rabbitmq/ quantaxis_pubsub
 
