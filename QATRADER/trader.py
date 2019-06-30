@@ -88,9 +88,9 @@ class QA_TRADER(QA_Thread):
 
         message = message if isinstance(
             message, dict) else json.loads(str(message))
-        # print(message)
+        #print(message)
         message = fix_dict(message)
-        # print(message)
+        #print(message)
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
@@ -129,6 +129,12 @@ class QA_TRADER(QA_Thread):
             self.settle()
             print(Exception)
             raise Exception
+            # if self.if_restart:
+            #     time.sleep(self.ping_gap)
+            # else:
+
+            #     raise Exception
+
     # 这里是线程在干的事情
 
     def run(self):
@@ -162,6 +168,8 @@ class QA_TRADER(QA_Thread):
                     if now.hour == 20:
                         self.settle()
 
+                    # self.ws.close()
+                    #self.if_restart = True
                     time.sleep(3)  # 阻塞住
 
             self.ping()
@@ -217,8 +225,8 @@ class QA_TRADER(QA_Thread):
             print(e)
 
     def handle(self, message):
-        # print(message)
-        # print(message['aid'])
+        #print(message)
+        #print(message['aid'])
         if message['aid'] == "rtn_data":
 
             try:
@@ -320,9 +328,8 @@ class QA_TRADER(QA_Thread):
                 # QA.QA_util_log_info(data)
         elif message['aid'] == "qry_settlement_info":
             reportdate = message['trading_day']
-            self.message['settlement'][str(
-                reportdate)] = message['settlement_info']
-            # print(self.message)
+            self.message['settlement'][str(reportdate)] = message['settlement_info']
+            #print(self.message)
             self.update_account()
 
     def settle(self):
@@ -339,6 +346,7 @@ class QA_TRADER(QA_Thread):
         4. 
         """
         print(self.message)
+        #self.message['trading_day'] = str(self.message['updatetime'])[0:10]
         self.settle_client.update_one({'account_cookie': self.account_cookie, 'trading_day': self.message.get('trading_day', str(self.last_update_time)[0:10])}, {
             '$set': fix_dict(self.message)}, upsert=True)
         """
@@ -405,8 +413,7 @@ class QA_TRADER(QA_Thread):
                     transfer(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
                              z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']), z['amount'])
                 )
-                self.message['banks'][self.message['bankid']
-                                      ]['fetch_amount'] = -1
+                self.message['banks'][z.get('bankid', self.message['bankid'])]['fetch_amount'] = -1
                 self.ws.send(
                     querybank(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
                               z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']))
@@ -415,8 +422,7 @@ class QA_TRADER(QA_Thread):
 
                 # x = list(self.message['banks'].())[0]
                 # x['fetch_amount'] = -1
-                self.message['banks'][self.message['bankid']
-                                      ]['fetch_amount'] = -1
+                self.message['banks'][z.get('bankid', self.message['bankid'])]['fetch_amount'] = -1
                 self.ws.send(
                     querybank(z['account_cookie'], z.get('capital_password', self.message['capital_password']),
                               z.get('bankid', self.message['bankid']), z.get('bankpassword', self.message['bank_password']))
