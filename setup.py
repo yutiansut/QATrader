@@ -44,6 +44,7 @@ setup(
     install_requires=['pika', 'quantaxis>=1.5.3', 'quantaxis_pubsub', 'quantaxis_otgbroker>=1.6'],
     entry_points={
         'console_scripts': [
+            'qatrader=QATRADER.__init__:single_trade'
         ]
     },
     keywords=KEYWORDS,
