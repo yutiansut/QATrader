@@ -95,16 +95,16 @@ p = producer.publisher_routing(
 
 p.pub(json.dumps({
     'topic': 'sendorder',
-    'account_cookie': acc,
+    'account_cookie': '111111',
     'strategy_id': 'test',
-    'code': code,
-    'price': price[code],
-    'order_direction': 'SELL',
-    'order_offset': 'CLOSE',
+    'code': 'rb1910',
+    'price': 4750,
+    'order_direction': 'BUY',
+    'order_offset': 'OPEN',
     'volume': 1,
     'order_time': str(datetime.datetime.now()),
     'exchange_id': 'SHFE'
-}), routing_key=acc)
+}), routing_key='111111')
 
 ```
 
