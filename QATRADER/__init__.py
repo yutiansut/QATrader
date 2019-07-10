@@ -13,7 +13,8 @@ import click
 @click.option('--portfolio', default='default')
 @click.option('--bank_password', default=None)
 @click.option('--capital_password', default=None)
-def single_trade(acc, pwd, wsuri, broker, trade_host, ping_gap, taskid, portfolio, bank_password, capital_password):
+@click.option('--appid', default=None)
+def single_trade(acc, pwd, wsuri, broker, trade_host, ping_gap, taskid, portfolio, bank_password, capital_password, appid):
     QA_TRADER(str(acc), str(pwd), wsuri=wsuri, trade_host=trade_host, portfolio=portfolio, bank_password=bank_password, capital_password=capital_password,
-                  broker_name=broker, ping_gap=ping_gap, taskid=taskid).start()
+                  appid=appid, broker_name=broker, ping_gap=ping_gap, taskid=taskid).start()
 

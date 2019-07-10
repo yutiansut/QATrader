@@ -39,7 +39,7 @@ class QA_TRADER(QA_Thread):
 
     def __init__(self, account_cookie, password, wsuri, broker_name='simnow', portfolio='default',
                  trade_host='localhost', trade_port='5672', pub_host='localhost', pub_port='5672', sig=True, ping_gap=1,
-                 bank_password=None, capital_password=None,
+                 bank_password=None, capital_password=None, appid= None,
                  if_restart=True, taskid=None, database=pymongo.MongoClient()):
 
         super().__init__(name='QATRADER_{}'.format(account_cookie))
@@ -70,6 +70,7 @@ class QA_TRADER(QA_Thread):
         self.bank_password = bank_password
         self.capital_password = capital_password
         self.tempPass = ''
+        self.appid = appid
 
         self.sub = consumer.subscriber_routing(host=trade_host, port=trade_port, user=trade_server_user, password=trade_server_password,
                                                exchange=trade_server_order_exchange, routing_key=self.account_cookie)
@@ -90,7 +91,7 @@ class QA_TRADER(QA_Thread):
             message, dict) else json.loads(str(message))
         #print(message)
         message = fix_dict(message)
-        #print(message)
+        print(message)
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
@@ -199,8 +200,12 @@ class QA_TRADER(QA_Thread):
 
         def _onopen(ws):
             def run():
-                ws.send(login(
-                    name=self.account_cookie, password=self.password, broker=self.broker_name))
+                if self.appid is None:
+                    ws.send(login(
+                        name=self.account_cookie, password=self.password, broker=self.broker_name))
+                else:
+                    ws.send(login(
+                        name=self.account_cookie, password=self.password, broker=self.broker_name, appid=self.appid))
             threading.Thread(target=run, daemon=False).start()
         ws.on_open = _onopen
         return ws
