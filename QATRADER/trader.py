@@ -88,7 +88,7 @@ class QA_TRADER(QA_Thread):
 
         message = message if isinstance(
             message, dict) else json.loads(str(message))
-        #print(message)
+        print(message)
         message = fix_dict(message)
         #print(message)
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)

@@ -32,7 +32,7 @@ LICENSE = "MIT"
 
 setup(
     name=NAME,
-    version='1.0',
+    version='1.1',
     description=DESCRIPTION,
     long_description='trader',
     classifiers=[
@@ -44,7 +44,8 @@ setup(
     install_requires=['pika', 'quantaxis>=1.5.3', 'quantaxis_pubsub', 'quantaxis_otgbroker>=1.6'],
     entry_points={
         'console_scripts': [
-            'qatrader=QATRADER.__init__:single_trade'
+            'qatrader=QATRADER.__init__:single_trade',
+            'qatraderserver=QATRADER.webhandler:webserver'
         ]
     },
     keywords=KEYWORDS,
