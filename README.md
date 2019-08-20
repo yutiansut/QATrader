@@ -59,7 +59,28 @@ qatraderserver
 http://localhost:8020/order?action=sendorder&acc=1010101&price=3800&code=rb1910&&direction=buy&offset=open&volume=1&exchange=shfe&type=sim
 
 
-## HTTP接入API
+撤单 [POST]
+
+http://localhost:8020/order?action=cancel_order&acc=1010101&order_id=xxxxx
+
+转账 [POST]
+
+
+http://localhost:8020/order?action=transfer&acc=1010101&type=real&amount=100
+
+
+查询银行 [POST]  (实盘独有API)
+
+http://localhost:8020/order?action=query_bank&acc=1010101&type=real&bank_id=1
+
+修改密码 [POST] 
+
+
+http://localhost:8020/order?action=change_password&acc=1010101&new_password=xxxx&type=real
+
+查询结算单  [POST]
+
+http://localhost:8020/order?action=query_settlement&acc=1010101&day=20190818
 
 
 
