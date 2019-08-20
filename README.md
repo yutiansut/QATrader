@@ -9,10 +9,61 @@ rabbitmq ubuntu一键部署 https://github.com/yutiansut/QUANTAXIS_RUN/blob/mast
 windows 可以参考, erlang/rabbit的安装文件在群文件中有
 ```
 
+安装部署可以参见: [安装参考](期货模拟盘从零配置.md)
+
 
 策略无需考虑交易的部分, 及策略只负责从数据库读取实时的账户数据/ 并发送业务请求到EVENT MQ即可实现交易
 
 这种设置主要是为了单账户多策略/ 以及单策略多市场等考虑
+
+
+## QATRADER 提供的两种交易接入方案
+
+### 1. eventmq 接入(AMQP协议)
+
+eventmq的接入模式速度较快, 延迟也较低
+
+AMQP协议天生也支持多个语言: c++/java/python/go/javascript/rust (具体可以在github搜索 rabbitmq的相关支持)
+
+QUANTAIXS的python版本的api接入 采用quantaxis_pubsub
+
+详细信息可以参考:[eventmq](## EVENTMQ 接入API)
+
+
+### 2. http 接入
+
+
+```
+在pip install 之后, 在命令行输入
+
+qatraderserver
+
+即可开启http端口(8020)
+```
+
+> 账户相关
+
+查询账户组合: [GET]  http://localhost:8020/tradeaccounts?action=list_sim
+
+查询单个账户: [GET]  http://localhost:8020/tradeaccounts?action=query_account&account_cookie=1010101
+
+查询账户历史(昨日 前日这些)  [GET] http://localhost:8020/tradeaccounts?action=query_accounthistory&account_cookie=1010101
+
+查询账户的资金曲线 [GET] http://localhost:8020/tradeaccounts?action=query_accounthistorytick&account_cookie=1010101
+
+
+> 订单相关  [POST] http://localhost:8020/order?action={}&acc={}
+
+下单: [POST] 
+
+http://localhost:8020/order?action=sendorder&acc=1010101&price=3800&code=rb1910&&direction=buy&offset=open&volume=1&exchange=shfe&type=sim
+
+
+## HTTP接入API
+
+
+
+## EVENTMQ 接入API
 
 > 获取账户数据:
 
