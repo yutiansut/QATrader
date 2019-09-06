@@ -64,7 +64,11 @@ qatraderserver
 
 下单: [POST] 
 
-http://localhost:8020/order?action=sendorder&acc=1010101&price=3800&code=rb1910&&direction=buy&offset=open&volume=1&exchange=shfe&type=sim
+attention:  
+1. exchange 内的交易所大写
+2. direction/offset 大写
+
+http://localhost:8020/order?action=sendorder&acc=1010101&price=3800&code=rb1910&&direction=BUY&offset=OPEN&volume=1&exchange=SHFE&type=sim
 
 
 撤单 [POST]
