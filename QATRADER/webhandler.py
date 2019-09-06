@@ -178,7 +178,7 @@ class SendOrderHandler(QABaseHandler):
                 'order_direction': direction,
                 'order_offset': offset,
                 'volume': volume,
-                'order_time': time,
+                'order_time': str(xtime),
                 'exchange_id': exchange_id
             })
             p.pub(json.dumps({
