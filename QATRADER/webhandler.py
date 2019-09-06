@@ -169,7 +169,7 @@ class SendOrderHandler(QABaseHandler):
                                                host=simtrade_server_ip, exchange='QAORDER_ROUTER')
 
             self.event[acc][action].append({
-                'reqesttime': xtime,
+                'reqesttime': str(xtime),
                 'account_cookie': acc,
                 'topic': action,
                 'strategy_id': 'test',
@@ -224,7 +224,7 @@ class SendOrderHandler(QABaseHandler):
             }), routing_key=acc)
             self.event[acc][action].append({
                 'topic': action,
-                'reqesttime': xtime,
+                'reqesttime': str(xtime),
                 'account_cookie': acc,
                 'order_id': orderid
             })
