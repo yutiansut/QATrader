@@ -12,8 +12,8 @@ qatrademongo_ip
 
 """
 
-trade_server_ip = os.get_env('qatrademq_ip','127.0.0.1')
-trade_server_port = os.get_env('qatrademq_port','5672')
+trade_server_ip = os.getenv('qatrademq_ip','127.0.0.1')
+trade_server_port = os.getenv('qatrademq_port','5672')
 
 trade_server_user = 'admin'
 trade_server_password = 'admin'
@@ -21,8 +21,8 @@ trade_server_password = 'admin'
 trade_server_account_exchange = 'QAACCOUNT'
 trade_server_order_exchange = 'QAORDER_ROUTER'
 
-simtrade_server_ip = os.get_env('qatrademq_ip','127.0.0.1')
-simtrade_server_port = os.get_env('qatrademq_port','5672')
+simtrade_server_ip = os.getenv('qatrademq_ip','127.0.0.1')
+simtrade_server_port = os.getenv('qatrademq_port','5672')
 
 simtrade_server_user = 'admin'
 simtrade_server_password = 'admin'
@@ -40,12 +40,12 @@ market_data_password = 'admin'
 
 # 历史数据服务器
 
-history_data_mongo_ip =  os.get_env('qatrademongo_ip','127.0.0.1')
+history_data_mongo_ip =  os.getenv('qatrademongo_ip','127.0.0.1')
 history_data_mongo_port = 27017
 
-real_account_mongo_ip = os.get_env('qatrademongo_ip','127.0.0.1')
+real_account_mongo_ip = os.getenv('qatrademongo_ip','127.0.0.1')
 real_account_mongo_port = 27017
-sim_account_mongo_ip = os.get_env('qatrademongo_ip','127.0.0.1')
+sim_account_mongo_ip = os.getenv('qatrademongo_ip','127.0.0.1')
 sim_account_mongo_port = 27017
 
 
