@@ -1,6 +1,8 @@
 # QATrader
 
 
+_QATrader兼容 [QIFI协议标准](https://github.com/QUANTAXIS/QIFI/blob/master/README.md)_
+
 ![version](https://img.shields.io/pypi/v/QATRADER.svg)
 
 ```
