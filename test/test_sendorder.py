@@ -10,8 +10,8 @@ def test_send_order(host='127.0.0.1'):
     p = producer.publisher_routing(
         user='admin', password='admin', host=host, exchange='QAORDER_ROUTER')
 
-    price = {'rb1905': 4171}
-    for acc in ['1010101']:
+    price = {'rb2001': 3472}
+    for acc in ['1000000']:
         for code in price.keys():
             p.pub(json.dumps({
                 'topic': 'sendorder',

@@ -10,22 +10,22 @@ from tornado.web import Application
 from tornado_http2.server import Server
 
 from QAPUBSUB import producer
-from QATRADER.setting import (real_account_mongo_ip, real_account_mongo_port,
-                              sim_account_mongo_ip, sim_account_mongo_port,
-                              simtrade_server_ip, trade_server_ip,
-                              trade_server_password, trade_server_user)
+# from QATRADER.setting import (real_account_mongo_ip, real_account_mongo_port,
+#                               sim_account_mongo_ip, sim_account_mongo_port,
+#                               simtrade_server_ip, trade_server_ip,
+#                               trade_server_password, trade_server_user)
 from QAWebServer import QABaseHandler, QAWebSocketHandler
 from QAWebServer.jobhandler import JOBHandler
-
+from qaenv import mongo_ip, mongo_uri, eventmq_ip, eventmq_port, eventmq_username, eventmq_password, eventmq_amqp
 """
 1. 一个完整的交易 部署/控制/查看过程
 """
 
 
 class TradeAccountHandler(QABaseHandler):
-
+    dbclient = pymongo.MongoClient(mongo_ip).QAREALTIME
     def get(self):
-        client = pymongo.MongoClient()
+
         action = self.get_argument('action')
         if action == 'list_sim':
             """
@@ -35,7 +35,7 @@ class TradeAccountHandler(QABaseHandler):
             res = []
             portfoliox = {'pre_balance': 0, 'balance': 0,
                           'close_profit': 0, 'float_profit': 0, 'available': 0}
-            for item in pymongo.MongoClient(host=sim_account_mongo_ip, port=sim_account_mongo_port).QAREALTIME.account.find(
+            for item in self.dbclient.account.find(
                     {'portfolio': portfolio}, {'_id': 0, 'accounts': 1, 'broker_name': 1, 'status': 1, 'trading_day': 1}):
                 _t = item['accounts']
                 res.append(_t)
@@ -60,7 +60,7 @@ class TradeAccountHandler(QABaseHandler):
                 'portfolio': portfoliox
             })
         if action == 'list_sim_portfolio':
-            res = list(set([item['portfolio'] for item in pymongo.MongoClient(host=sim_account_mongo_ip, port=sim_account_mongo_port).QAREALTIME.account.find(
+            res = list(set([item['portfolio'] for item in self.dbclient.account.find(
                 {}, {'_id': 0, 'portfolio': 1})]))
             self.write({
                 'status': 200,
@@ -68,7 +68,7 @@ class TradeAccountHandler(QABaseHandler):
             })
         elif action == 'list_real':
             res = []
-            for item in pymongo.MongoClient(host=real_account_mongo_ip, port=real_account_mongo_port).QAREALTIME.account.find(
+            for item in self.dbclient.account.find(
                     {}, {'_id': 0, 'accounts': 1, 'broker_name': 1, 'status': 1, 'trading_day': 1}):
                 _t = item['accounts']
                 _t.update(
@@ -86,7 +86,7 @@ class TradeAccountHandler(QABaseHandler):
             #     {'account_cookie': account_cookie}, {'_id': 0}))
             self.write({
                 'status': 200,
-                'result': client.QAREALTIME.account.find_one({'account_cookie': account_cookie}, {'_id': 0})
+                'result': self.dbclient.account.find_one({'account_cookie': account_cookie}, {'_id': 0})
             })
         elif action == 'query_accounthistory':
             account_cookie = self.get_argument('account_cookie')
@@ -94,38 +94,37 @@ class TradeAccountHandler(QABaseHandler):
             # print([item for item in client.QAREALTIME.history.find({'account_cookie': account_cookie}, {'_id': 0})])
             self.write({
                 'status': 200,
-                'result': [{'trading_day': item['trading_day'], 'balance': item['accounts']['balance']} for item in client.QAREALTIME.history.find({'account_cookie': account_cookie}, {'_id': 0})]
+                'result': [{'trading_day': item['trading_day'], 'balance': item['accounts']['balance']} for item in self.dbclient.history.find({'account_cookie': account_cookie}, {'_id': 0})]
             })
         elif action == 'query_accounthistorytick':
             account_cookie = self.get_argument('account_cookie')
             self.write({
                 'status': 200,
-                'result': [{'trading_day': str(item['updatetime']), 'balance': item['accounts']['balance']} for item in client.QAREALTIME.hisaccount.find({'account_cookie': account_cookie}, {'_id': 0})]
+                'result': [{'trading_day': str(item['updatetime']), 'balance': item['accounts']['balance']} for item in self.dbclient.hisaccount.find({'account_cookie': account_cookie}, {'_id': 0})]
             })
 
     def post(self):
-        client = pymongo.MongoClient().QAREALTIME
         action = self.get_argument('action')
         if action == 'restart_all':
 
-            for acc in client.account.find({'status': 500}):
-                client.account.update_one({'_id': acc['_id']}, {
+            for acc in self.dbclient.account.find({'status': 500}):
+                self.dbclient.account.update_one({'_id': acc['_id']}, {
                     '$set': {'status': 100}})
         elif action == 'kill':
             tradetype = self.get_argument('type', 'sim')
             if tradetype == 'sim':
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             p.pub(json.dumps({
                 'topic': 'kill'
             }), routing_key=self.get_argument('account_cookie'))
         elif action == 'killall':
-            for acc in client.account.find({'status': 200}):
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
+            for acc in self.dbclient.account.find({'status': 200}):
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
                 print(acc['account_cookie'])
                 p.pub(json.dumps({
                     'topic': 'kill'
@@ -138,7 +137,7 @@ def adaptChange(x): return float(x) if '.' in str(x) else int(x)
 class SendOrderHandler(QABaseHandler):
     event = {}
     starttime = str(datetime.datetime.now())
-    client = pymongo.MongoClient().QAREALTIME
+    dbclient = pymongo.MongoClient(mongo_ip).QAREALTIME
     event['startime'] = starttime
 
     def post(self):
@@ -146,7 +145,7 @@ class SendOrderHandler(QABaseHandler):
 
         acc = self.get_argument('acc')
         xtime = datetime.datetime.now()
-        #self.event['startime'] = self.starttime
+
         if acc not in self.event.keys():
             self.event[acc] = {}
         if action not in self.event[acc].keys():
@@ -162,12 +161,11 @@ class SendOrderHandler(QABaseHandler):
             price = adaptChange(price)
             volume = adaptChange(volume)
             if accounttrade == 'real':
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
-
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             self.event[acc][action].append({
                 'reqesttime': str(xtime),
                 'account_cookie': acc,
@@ -193,8 +191,8 @@ class SendOrderHandler(QABaseHandler):
                 'order_time': str(datetime.datetime.now()),
                 'exchange_id': exchange_id
             }), routing_key=acc)
-            self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
-                                         '$set': self.event[acc]}, upsert=True)
+            self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                '$set': self.event[acc]}, upsert=True)
             self.write({
                 'status': 200,
                 'result': {
@@ -212,11 +210,11 @@ class SendOrderHandler(QABaseHandler):
             orderid = self.get_argument('order_id')
             accounttrade = self.get_argument('type')
             if accounttrade == 'real':
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             p.pub(json.dumps({
                 'topic': action,
                 'account_cookie': acc,
@@ -228,8 +226,8 @@ class SendOrderHandler(QABaseHandler):
                 'account_cookie': acc,
                 'order_id': orderid
             })
-            self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
-                                         '$set': self.event[acc]}, upsert=True)
+            self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                '$set': self.event[acc]}, upsert=True)
         elif action == 'transfer':
             #bankid = self.get_argument('bankid')
             # bankpassword = self.get_argument('bankpassword')
@@ -263,8 +261,7 @@ class SendOrderHandler(QABaseHandler):
                     # print('true for not equal amount')
                     xflag = True
             if xflag:
-                client = pymongo.MongoClient(
-                    trade_server_ip).QAREALTIME.account
+                client = self.dbclient.account
                 res = client.find_one({'account_cookie': acc})
                 if res is not None:
                     bank = res['banks']
@@ -287,8 +284,8 @@ class SendOrderHandler(QABaseHandler):
 
                             if accounttrade == 'real':
                                 staticbalance1 = accounts1['pre_balance']
-                                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
                                 p.pub(json.dumps({
                                     'topic': action,
                                     'account_cookie': acc,
@@ -300,7 +297,7 @@ class SendOrderHandler(QABaseHandler):
                                     'amount': float(amount),
                                     'reqesttime': xtime,
                                 })
-                                self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                                self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
                                     '$set': self.event[acc]}, upsert=True)
                                 time.sleep(2)
                                 p.pub(json.dumps({
@@ -372,19 +369,19 @@ class SendOrderHandler(QABaseHandler):
             accounttrade = self.get_argument('type')
             bankid = self.get_argument('bankid', False)
             if accounttrade == 'real':
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             self.event[acc][action].append({
                 'topic': action,
                 'account_cookie': acc,
                 'lastrequesttime': xtime
             })
             print(self.event)
-            self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
-                                         '$set': self.event[acc]}, upsert=True)
+            self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                '$set': self.event[acc]}, upsert=True)
             if bankid:
                 p.pub(json.dumps({
                     'topic': action,
@@ -400,11 +397,11 @@ class SendOrderHandler(QABaseHandler):
             newpw = self.get_argument('newpassword')
             accounttrade = self.get_argument('type')
             if accounttrade == 'real':
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=simtrade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
 
             p.pub(json.dumps({
                 'topic': action,
@@ -416,12 +413,12 @@ class SendOrderHandler(QABaseHandler):
                 'lastrequesttime': xtime,
                 'newPass': newpw
             })
-            self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
-                                         '$set': self.event[acc]}, upsert=True)
+            self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                '$set': self.event[acc]}, upsert=True)
 
         elif action == 'query_settlement':
             dates = self.get_argument('day')
-            res = self.client.account.find_one({'account_cookie': acc}, {
+            res = self.dbclient.account.find_one({'account_cookie': acc}, {
                 'settlement': 1, '_id': 0})['settlement']
             if dates in res.keys():
                 self.write({
@@ -429,8 +426,8 @@ class SendOrderHandler(QABaseHandler):
                     'result': res[dates]
                 })
             else:
-                p = producer.publisher_routing(user=trade_server_user, password=trade_server_password,
-                                               host=trade_server_ip, exchange='QAORDER_ROUTER')
+                p = producer.publisher_routing(user=eventmq_username, password=eventmq_password,
+                                               host=eventmq_ip, exchange='QAORDER_ROUTER')
 
                 p.pub(json.dumps({
                     'topic': action,
@@ -440,10 +437,10 @@ class SendOrderHandler(QABaseHandler):
                     'topic': action,
                     'day': dates
                 })
-                self.client.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
+                self.dbclient.event.update_one({'starttime': self.starttime, 'account_cookie': acc}, {
                     '$set': self.event[acc]}, upsert=True)
                 time.sleep(2)
-                res = self.client.account.find_one({'account_cookie': acc}, {
+                res = self.dbclient.account.find_one({'account_cookie': acc}, {
                     'settlement': 1, '_id': 0})['settlement']
                 if dates in res.keys():
                     self.write({
