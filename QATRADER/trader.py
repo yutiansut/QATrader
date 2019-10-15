@@ -89,9 +89,9 @@ class QA_TRADER(QA_Thread):
 
         message = message if isinstance(
             message, dict) else json.loads(str(message))
-        print(message)
+
         message = fix_dict(message)
-        print(message)
+
         self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
@@ -271,7 +271,7 @@ class QA_TRADER(QA_Thread):
                 except Exception as e:
                     QA.QA_util_log_info(e)
                 self.updateSinglekey('trades', new_message)
-                print('update!!!!!!!!!!!!!!!!!!!!!!')
+                #print('update!!!!!!!!!!!!!!!!!!!!!!')
 
                 self.update_account()
 
@@ -330,7 +330,7 @@ class QA_TRADER(QA_Thread):
         3. 保存历史的持仓/最后一个市值等
         4. 
         """
-        print(self.message)
+        #print(self.message)
         #self.message['trading_day'] = str(self.message['updatetime'])[0:10]
         self.settle_client.update_one({'account_cookie': self.account_cookie, 'trading_day': self.message.get('trading_day', str(self.last_update_time)[0:10])}, {
             '$set': fix_dict(self.message)}, upsert=True)
