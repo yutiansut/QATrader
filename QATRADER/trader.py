@@ -15,7 +15,7 @@ from QATRADER.setting import (
     trade_server_user)
 from QATRADER.util import fix_dict
 from QUANTAXIS.QAEngine import QA_Thread
-
+from qaenv import mongo_ip, mongo_uri, eventmq_ip, eventmq_port, eventmq_username, eventmq_password, eventmq_amqp
 
 # websocket.enableTrace(True)
 """
@@ -38,9 +38,9 @@ class QA_TRADER(QA_Thread):
     """
 
     def __init__(self, account_cookie, password, wsuri, broker_name='simnow', portfolio='default',
-                 trade_host='localhost', trade_port='5672', pub_host='localhost', pub_port='5672', sig=True, ping_gap=1,
+                 eventmq_ip=eventmq_ip, eventmq_port=eventmq_port, sig=True, ping_gap=1,
                  bank_password=None, capital_password=None, appid=None,
-                 if_restart=True, taskid=None, database=pymongo.MongoClient()):
+                 if_restart=True, taskid=None, database_ip = mongo_ip):
 
         super().__init__(name='QATRADER_{}'.format(account_cookie))
         self.account_cookie = account_cookie
@@ -48,11 +48,11 @@ class QA_TRADER(QA_Thread):
         self.broker_name = broker_name
         self.wsuri = wsuri
         self.pub = producer.publisher_routing(
-            exchange=trade_server_account_exchange, host=pub_host, port=pub_port)
+            exchange=trade_server_account_exchange, host=eventmq_ip, port=eventmq_port)
         self.ws = self.generate_websocket()
         """几个涉及跟数据库交互的client
         """
-
+        database = pymongo.MongoClient(mongo_ip)
         self.account_client = database.QAREALTIME.account
         self.settle_client = database.QAREALTIME.history
         self.xhistory = database.QAREALTIME.hisaccount
@@ -60,7 +60,7 @@ class QA_TRADER(QA_Thread):
         self.portfolio = portfolio
         self.connection = True
         self.message = {'password': password, 'wsuri': wsuri, 'broker_name': broker_name, 'portfolio': portfolio, 'taskid': taskid, 'updatetime': str(
-            datetime.datetime.now()), 'accounts': {}, 'orders': {}, 'positions': {}, 'trades': {}, 'banks': {}, 'transfers': {}, 'event': {}, 'trade_host': trade_host, 'pub_host': pub_host,
+            datetime.datetime.now()), 'accounts': {}, 'orders': {}, 'positions': {}, 'trades': {}, 'banks': {}, 'transfers': {}, 'event': {},  'eventmq_ip': eventmq_ip,
             'ping_gap': ping_gap, 'account_cookie': account_cookie, 'bank_password': bank_password, 'capital_password': capital_password, 'settlement': {},
             'bankid': 0, 'money': 0, 'investor_name': ''}
         self.last_update_time = datetime.datetime.now()
@@ -72,10 +72,10 @@ class QA_TRADER(QA_Thread):
         self.tempPass = ''
         self.appid = appid
 
-        self.sub = consumer.subscriber_routing(host=trade_host, port=trade_port, user=trade_server_user, password=trade_server_password,
+        self.sub = consumer.subscriber_routing(host=eventmq_ip, port=eventmq_port, user=trade_server_user, password=trade_server_password,
                                                exchange=trade_server_order_exchange, routing_key=self.account_cookie)
         self.pub_transaction = producer.publisher_routing(
-            host=pub_host, exchange='QATRANSACTION')
+            host=eventmq_ip, exchange='QATRANSACTION')
         self.sub.callback = self.callback
 
     def on_close(self):
@@ -248,6 +248,8 @@ class QA_TRADER(QA_Thread):
                     self.message['trading_day'] = self.trading_day
 
                 self.message['accounts'] = new_message['accounts']['CNY']
+                if "WithdrawQuota" not in self.message['accounts'].keys():
+                    self.message['accounts']['WithdrawQuota'] =  self.message['accounts']['available']
                 self.message['investor_name'] = new_message.get(
                     'investor_name', '')
                 for key in ['positions', 'orders', 'banks', 'transfers']:
