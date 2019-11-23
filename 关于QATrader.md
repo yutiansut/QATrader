@@ -2,11 +2,13 @@
 
 ### QATrader是什么
 
-QATrader是基于快期/天勤 Open-Trade-Gateway 项目对接/封装的实盘对接项目
+QATrader是基于快期/天勤 Open-Trade-Gateway 项目对接/封装的实盘对接项目, 在2020年前 将完成对于XTP/其他股票接口的对接
 
 ### QATrader 怎么实现的交易的解耦:
 
 策略/风控 ==> (序列化的)下单指令  ==> messageQueue/Http   ==>  QATrader  ==> Websocket ==> CTP
+
+QATrader的存储格式遵循QIFI协议, 因此可以和模拟盘/回测/风控等底层相通, 具体可以参见QIFI协议和协议的其他实现
 
 ### QATrader 为什么要进行交易的解耦:
 
