@@ -8,7 +8,7 @@ def fix_dict(datax, ignore_duplicate_key=False):
     :param ignore_duplicate_key: True: if the replacement key is already in the dict, now the dot-key value will be ignored.
                                  False: raise ValueError in that case.
     """
-    #datax = copy.deepcopy(data)
+    datax = copy.deepcopy(datax)
     
     if isinstance(datax, (list, tuple)):
         list2 = list()

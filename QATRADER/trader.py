@@ -2,6 +2,7 @@ import datetime
 import json
 import threading
 import time
+import copy
 import pymongo
 
 import QUANTAXIS as QA
@@ -38,7 +39,7 @@ class QA_TRADER(QA_Thread):
     """
 
     def __init__(self, account_cookie, password, wsuri, broker_name='simnow', portfolio='default',
-                 eventmq_ip=eventmq_ip, eventmq_port=eventmq_port, sig=True, ping_gap=1,
+                 eventmq_ip=eventmq_ip, eventmq_port=eventmq_port, sig=True, ping_gap=5,
                  bank_password=None, capital_password=None, appid=None,
                  if_restart=True, taskid=None, database_ip = mongo_ip):
 
@@ -52,7 +53,8 @@ class QA_TRADER(QA_Thread):
         self.ws = self.generate_websocket()
         """几个涉及跟数据库交互的client
         """
-        database = pymongo.MongoClient(mongo_ip)
+        #print(mongo_ip)
+        database = pymongo.MongoClient(database_ip)
         self.account_client = database.QAREALTIME.account
         self.settle_client = database.QAREALTIME.history
         self.xhistory = database.QAREALTIME.hisaccount
@@ -62,7 +64,7 @@ class QA_TRADER(QA_Thread):
         self.message = {'password': password, 'wsuri': wsuri, 'broker_name': broker_name, 'portfolio': portfolio, 'taskid': taskid, 'updatetime': str(
             datetime.datetime.now()), 'accounts': {}, 'orders': {}, 'positions': {}, 'trades': {}, 'banks': {}, 'transfers': {}, 'event': {},  'eventmq_ip': eventmq_ip,
             'ping_gap': ping_gap, 'account_cookie': account_cookie, 'bank_password': bank_password, 'capital_password': capital_password, 'settlement': {},
-            'bankid': 0, 'money': 0, 'investor_name': ''}
+            'bankid': '0', 'bankname': '', 'money': 0, 'investor_name': '', 'pub_host': '127.0.0.1', 'trade_host': '127.0.0.1'}
         self.last_update_time = datetime.datetime.now()
         self.sig = sig
         self.if_restart = if_restart
@@ -91,8 +93,9 @@ class QA_TRADER(QA_Thread):
             message, dict) else json.loads(str(message))
 
         message = fix_dict(message)
+        #print(message)
 
-        self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
+        #self.pub.pub(json.dumps(message), routing_key=self.account_cookie)
         """需要在这里维持实时账户逻辑
 
         accounts ==> 直接覆盖
@@ -117,6 +120,8 @@ class QA_TRADER(QA_Thread):
         QA.QA_util_log_info('=== CONNECTION INFO ===')
         QA.QA_util_log_info(self.connection)
         QA.QA_util_log_info('=== =============== ===')
+        # self.xhistory.insert_one(
+        #     {'account_cookie': self.account_cookie, 'accounts': self.message['accounts'], 'updatetime': self.last_update_time})
 
     def ping(self):
         try:
@@ -213,8 +218,9 @@ class QA_TRADER(QA_Thread):
 
     def update_account(self):
         QA.QA_util_log_info('updateAccount')
+        mes = fix_dict(copy.deepcopy(self.message))
         self.account_client.update_one({'account_cookie': self.account_cookie}, {
-            '$set': fix_dict(self.message)}, upsert=True)
+            '$set': mes}, upsert=True)
 
     def updateSinglekey(self, singlekey, newdata):
         """更新单个业务字段
@@ -233,6 +239,7 @@ class QA_TRADER(QA_Thread):
         if message['aid'] == "rtn_data":
 
             try:
+                lut = self.last_update_time
                 data = message['data'][0]['trade']
                 # if 'session' in data
 
@@ -260,7 +267,7 @@ class QA_TRADER(QA_Thread):
                     if res['name'] == '':
                         self.ws.send(querybank(
                             self.account_cookie, self.message['capital_password'], res['id'], self.message['bank_password']))
-                    self.message['bankid'] = res['id']
+                    self.message['bankid'] = str(res['id'])
                     self.message['bankname'] = res['name']
                     self.message['money'] = res['fetch_amount']
 
@@ -277,8 +284,6 @@ class QA_TRADER(QA_Thread):
 
                 self.update_account()
 
-                self.xhistory.insert_one(
-                    {'account_cookie': account_cookie, 'accounts': self.message['accounts'], 'updatetime': self.last_update_time})
 
             except Exception as e:
                 print(e)

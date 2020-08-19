@@ -17,6 +17,7 @@ import click
 @click.option('--capital_password', default=None)
 @click.option('--appid', default=None)
 def single_trade(acc, pwd, wsuri, broker, eventmq_ip, database_ip, ping_gap, taskid, portfolio, bank_password, capital_password, appid):
+    #print(database_ip)
     QA_TRADER(str(acc), str(pwd), wsuri=wsuri, eventmq_ip=eventmq_ip, database_ip=database_ip, portfolio=portfolio, bank_password=bank_password, capital_password=capital_password,
                   appid=appid, broker_name=broker, ping_gap=ping_gap, taskid=taskid).start()
 
